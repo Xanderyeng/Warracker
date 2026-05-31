@@ -5,6 +5,13 @@ services:
     image: ghcr.io/sassanix/warracker/main:latest
     expose:
       - "80"
+    labels:
+    - traefik.enable=true
+    - traefik.http.routers.warracker.rule=Host(`warranty.exactli.io`)
+    - traefik.http.routers.warracker.entrypoints=https
+    - traefik.http.routers.warracker.tls=true
+    - traefik.http.routers.warracker.tls.certresolver=letsencrypt
+    - traefik.http.services.warracker.loadbalancer.server.port=80
     volumes:
       - uploads:/data/uploads
     environment:
@@ -45,7 +52,9 @@ services:
       bash -c "
         exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
       "
-
+    networks:
+    - default
+    - coolify
   warrackerdb:
     image: "postgres:15-alpine"
     volumes:
@@ -64,3 +73,10 @@ services:
 volumes:
   postgres_data:
   uploads:
+
+networks:
+  default:
+    name: warracker_network
+  coolify:
+    external: true
+    name: coolify
