@@ -1,0 +1,66 @@
+version: '3'
+
+services:
+  warracker:
+    image: ghcr.io/sassanix/warracker/main:latest
+    expose:
+      - "80"
+    volumes:
+      - uploads:/data/uploads
+    environment:
+      - DB_HOST=warrackerdb
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=warranty_test
+      - DB_USER=warranty_user
+      - DB_PASSWORD=${DB_PASSWORD:-warranty_password}
+      - DB_ADMIN_USER=warracker_admin
+      - DB_ADMIN_PASSWORD=${DB_ADMIN_PASSWORD:-change_this_password_in_production}
+      - SMTP_HOST=${SMTP_HOST:-localhost}
+      - SMTP_PORT=${SMTP_PORT:-1025}
+      - SMTP_USERNAME=${SMTP_USERNAME:-notifications@warracker.com}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM_ADDRESS=${SMTP_FROM_ADDRESS:-}
+      - SECRET_KEY=${SECRET_KEY:-your_very_secret_flask_key_change_me}
+      - OIDC_PROVIDER_NAME=${OIDC_PROVIDER_NAME:-oidc}
+      - OIDC_CLIENT_ID=${OIDC_CLIENT_ID:-}
+      - OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET:-}
+      - OIDC_ISSUER_URL=${OIDC_ISSUER_URL:-}
+      - OIDC_SCOPE=${OIDC_SCOPE:-openid email profile}
+      - FRONTEND_URL=${FRONTEND_URL:-https://warracker.yourdomain.com}
+      - APP_BASE_URL=${APP_BASE_URL:-https://warracker.yourdomain.com}
+      - APPRISE_ENABLED=${APPRISE_ENABLED:-false}
+      - APPRISE_URLS=${APPRISE_URLS:-}
+      - APPRISE_EXPIRATION_DAYS=${APPRISE_EXPIRATION_DAYS:-7,30}
+      - APPRISE_NOTIFICATION_TIME=${APPRISE_NOTIFICATION_TIME:-09:00}
+      - APPRISE_TITLE_PREFIX=${APPRISE_TITLE_PREFIX:-[Warracker]}
+      - PYTHONUNBUFFERED=1
+      - WARRACKER_MEMORY_MODE=${WARRACKER_MEMORY_MODE:-optimized}
+      - MAX_UPLOAD_MB=${MAX_UPLOAD_MB:-16}
+      - NGINX_MAX_BODY_SIZE_VALUE=${NGINX_MAX_BODY_SIZE_VALUE:-16M}
+    depends_on:
+      warrackerdb:
+        condition: service_healthy
+    restart: unless-stopped
+    command: >
+      bash -c "
+        exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+      "
+
+  warrackerdb:
+    image: "postgres:15-alpine"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=warranty_test
+      - POSTGRES_USER=warranty_user
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-warranty_password}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  uploads:
