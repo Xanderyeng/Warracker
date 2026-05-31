@@ -2,9 +2,7 @@ version: '3'
 
 services:
   warracker:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/sassanix/warracker/main:latest
     expose:
       - "80"
     volumes:
